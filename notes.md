@@ -4,5 +4,5 @@
 * Generate 3D localizations?
 
 # Workflow
-* Filter out the event salt-n-paper noise
+* Filter out the event salt-n-paper noise --> not needed with doG
 * There is no background - no median filtering?

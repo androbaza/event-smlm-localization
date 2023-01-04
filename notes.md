@@ -6,3 +6,7 @@
 # Workflow
 * Filter out the event salt-n-paper noise --> not needed with doG
 * There is no background - no median filtering?
+
+# TO-DO
+* finish the script for pSMLM, make it a function in the end
+* add custom parameters, so than grid search for parameters could be performed

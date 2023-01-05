@@ -6,6 +6,7 @@
 # Workflow
 * Filter out the event salt-n-paper noise --> not needed with doG
 * There is no background - no median filtering?
+* generating the images as floats reduces the number of false double peak identifications after doG filtereing. 
 
 # TO-DO
 * finish the script for pSMLM, make it a function in the end

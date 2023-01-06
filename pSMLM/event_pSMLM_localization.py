@@ -2,8 +2,8 @@ import numpy as np
 from skimage import io
 from scipy.ndimage import gaussian_filter
 from skimage.feature.peak import peak_local_max
-import os
-import torch
+# import os
+# import torch
 import torch.fft as fft
 
 filepath = '/home/smlm-workstation/event-smlm/Evb-SMLM/generated_frames/tubulin300x400_frames_scaled_x1000_5.0ms-absolute_time_5_15.0.tif'
@@ -28,14 +28,14 @@ def extract_roi(frame, G_s1=2.5, G_s2=6, local_max_scale=7, roi_rad=5):
     peaks = peak_local_max(doG, threshold_abs = np.std(doG) * local_max_scale)
 
     # remove peaks which overlap with image borders
-    peaks = [peak for peak in peaks if \
+    peaks = np.array([peak for peak in peaks if
         not peak[0]+roi_rad >=frame.shape[1] \
         and not peak[0]-roi_rad <= 0 \
         and not peak[1]+roi_rad >=frame.shape[2] \
-        and not peak[1]-roi_rad <= 0]
+        and not peak[1]-roi_rad <= 0])
 
     # create a list of tensors from areas around peaks
-    return torch.tensor([im[peak[0]-roi_rad:peak[0]+roi_rad, peak[1]-roi_rad:peak[1]+roi_rad] for peak in peaks])
+    return np.array([im[peak[0]-roi_rad:peak[0]+roi_rad, peak[1]-roi_rad:peak[1]+roi_rad] for peak in peaks])
 
 def fit_phasor(roi, roi_rad):
     """
@@ -44,18 +44,21 @@ def fit_phasor(roi, roi_rad):
     Returns: 
         Tensor: localization coordinates, intensity
     """
-    def roi_rad(roi_ft, coord_type):
-        phase_angle = torch.atan(roi_ft[0,1].imag/roi_ft[0,1].real) - np.pi
-        return abs(phase_angle)/(2*np.pi/(roi_rad*2+1))
+    def est_coord(roi_ft, coord_type):
+        # phase_angle = torch.atan(roi_ft[0,1].imag/roi_ft[0,1].real) - np.pi
+        phase_angle = np.arctan(roi_ft[coord_type].imag / roi_ft[coord_type].real) - np.pi
+        return np.abs(phase_angle) / (2*np.pi/(roi_rad*2+1))
 
-    localizations = []
 
-    for single_roi in roi:
+    localizations = np.zeros(len(roi), 3)
+
+    for id, single_roi in enumerate(roi):
         # FT the ROIs
-        roi_ft = fft.fft2(single_roi)
+        # roi_ft = fft.fft2(single_roi)
+        roi_ft = np.fft.fft2(single_roi)
 
         # find phase angles
-        localizations.append()
+        localizations[id, :] = est_coord(single_roi, (0, 1)), est_coord(single_roi, (1, 0))
     
 im = io.imread(filepath)
 frame = im[150,:,:]

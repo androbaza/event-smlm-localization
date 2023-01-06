@@ -4,12 +4,16 @@ from scipy.ndimage import gaussian_filter
 from skimage.feature.peak import peak_local_max
 # import os
 # import torch
-import torch.fft as fft
+# import torch.fft as fft
+# import matplotlib.pyplot as plt
+import time
+from numba import njit
 
 filepath = '/home/smlm-workstation/event-smlm/Evb-SMLM/generated_frames/tubulin300x400_frames_scaled_x1000_5.0ms-absolute_time_5_15.0.tif'
 
 
-def extract_roi(frame, G_s1=2.5, G_s2=6, local_max_scale=7, roi_rad=5):
+
+def extract_roi(frame, G_s1=2.5, G_s2=4, local_max_scale=7, roi_rad=3):
     """
     Args:
         frame (ndarray): input frame
@@ -20,6 +24,17 @@ def extract_roi(frame, G_s1=2.5, G_s2=6, local_max_scale=7, roi_rad=5):
     Returns: 
         Tensor: list of ROIs
     """
+    # @njit(cache=True)
+    def remove_border_peaks(peaks):
+        return [peak for peak in peaks if
+                not peak[0]+roi_rad >=frame.shape[1] \
+                and not peak[0]-roi_rad <= 0 \
+                and not peak[1]+roi_rad >=frame.shape[0] \
+                and not peak[1]-roi_rad <= 0]
+
+    # @njit(cache=True)
+    def gen_rois(peaks):
+        return [frame[peak[0]-roi_rad:peak[0]+roi_rad+1, peak[1]-roi_rad:peak[1]+roi_rad+1] for peak in peaks]
 
     # perfom difference of gaussians
     doG = gaussian_filter(frame, sigma=G_s1) - gaussian_filter(frame, sigma=G_s2)
@@ -28,39 +43,39 @@ def extract_roi(frame, G_s1=2.5, G_s2=6, local_max_scale=7, roi_rad=5):
     peaks = peak_local_max(doG, threshold_abs = np.std(doG) * local_max_scale)
 
     # remove peaks which overlap with image borders
-    peaks = np.array([peak for peak in peaks if
-        not peak[0]+roi_rad >=frame.shape[1] \
-        and not peak[0]-roi_rad <= 0 \
-        and not peak[1]+roi_rad >=frame.shape[2] \
-        and not peak[1]-roi_rad <= 0])
+    peaks = np.array(remove_border_peaks(peaks))
 
     # create a list of tensors from areas around peaks
-    return np.array([im[peak[0]-roi_rad:peak[0]+roi_rad, peak[1]-roi_rad:peak[1]+roi_rad] for peak in peaks])
+    return np.array(gen_rois(peaks)), peaks
 
-def fit_phasor(roi, roi_rad):
+
+def fit_phasor(roi, peaks, roi_rad=3):
     """
     Args:
         roi (tensor): input ROIs
     Returns: 
         Tensor: localization coordinates, intensity
     """
+    # @njit(cache=True, fastmath=True)
     def est_coord(roi_ft, coord_type):
         # phase_angle = torch.atan(roi_ft[0,1].imag/roi_ft[0,1].real) - np.pi
         phase_angle = np.arctan(roi_ft[coord_type].imag / roi_ft[coord_type].real) - np.pi
         return np.abs(phase_angle) / (2*np.pi/(roi_rad*2+1))
 
-
-    localizations = np.zeros(len(roi), 3)
+    localizations = np.zeros((len(roi), 3))
 
     for id, single_roi in enumerate(roi):
         # FT the ROIs
         # roi_ft = fft.fft2(single_roi)
         roi_ft = np.fft.fft2(single_roi)
-
         # find phase angles
-        localizations[id, :] = est_coord(single_roi, (0, 1)), est_coord(single_roi, (1, 0))
+        localizations[id, :] = peaks[id][1] + est_coord(roi_ft, (0, 1)) - roi_rad, \
+                               peaks[id][0] + est_coord(roi_ft, (1, 0)) - roi_rad, \
+                               np.sum(np.nonzero(single_roi))
+    return localizations
     
 im = io.imread(filepath)
 frame = im[150,:,:]
-
-
+start = time.perf_counter()
+localizations = fit_phasor(*extract_roi(frame))
+print(time.perf_counter() - start)

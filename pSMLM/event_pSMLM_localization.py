@@ -5,7 +5,7 @@ from skimage.feature.peak import peak_local_max
 # import os
 # import torch
 # import torch.fft as fft
-# import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 import time
 # from numba import njit
 
@@ -90,8 +90,13 @@ for id, _ in enumerate(im):
     localizations_whole[num_loc:num_loc+localizations.shape[0], 0] = id
     localizations_whole[num_loc:num_loc+localizations.shape[0], 1:4] = localizations
     num_loc += localizations.shape[0]
-    if id%1000==0: print(id)
+    if id%100==0: print(id)
 
 localizations_whole = localizations_whole[:num_loc]
 print(time.perf_counter() - start)
 print(localizations_whole.shape)
+
+# plt.imshow(im[100,:,:], cmap='gray', vmin=0, vmax=3000)
+# for l in range(0, 4000):
+#   plt.scatter(localizations_whole[l, 1],
+#               localizations_whole[l, 2], marker='x', s=5)

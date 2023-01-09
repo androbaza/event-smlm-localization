@@ -15,3 +15,5 @@
 * paralellization on CPU
 * paralellization on GPU?
 * add custom parameters, so than grid search for parameters could be performed
+* DAOSTORM won't compile on Ubuntu 22
+* check how PeakFit and Rain-STORM work

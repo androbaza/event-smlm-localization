@@ -7,6 +7,7 @@ from skimage.feature.peak import peak_local_max
 # import torch.fft as fft
 import matplotlib.pyplot as plt
 import time
+import datetime
 # from numba import njit
 
 # filepath = '/home/smlm-workstation/event-smlm/Evb-SMLM/generated_frames/tubulin300x400_frames_scaled_x1000_5.0ms-absolute_time_5_15.0.tif'
@@ -93,6 +94,10 @@ for id, _ in enumerate(im):
     if id%100==0: print(id)
 
 localizations_whole = localizations_whole[:num_loc]
+# np.savetxt('/home/smlm-workstation/event-smlm/event-smlm-localization/localizations/LocalizationList_'+ str(datetime.datetime.now())[:-7] +'.xml', localizations_whole,
+#            fmt='%1.0f %1.4f %1.4f %1.1f', delimiter=",")
+np.savetxt('/home/smlm-workstation/event-smlm/event-smlm-localization/localizations/LocalizationList_' + str(datetime.datetime.now())[:-7] + '.csv', localizations_whole,
+           fmt='%1.0f %1.4f %1.4f %1.1f', delimiter=",", header='frame, x, y, Intensity')
 print(time.perf_counter() - start)
 print(localizations_whole.shape)
 
@@ -100,3 +105,7 @@ print(localizations_whole.shape)
 # for l in range(0, 4000):
 #   plt.scatter(localizations_whole[l, 1],
 #               localizations_whole[l, 2], marker='x', s=5)
+
+
+def merge_localizations(maxD=30, maxOff=5, maxL=500):
+    pass

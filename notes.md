@@ -3,6 +3,10 @@
 * Adapt the input data to perform localization using DECODE.
 * Generate 3D localizations?
 
+# Notes
+* DoG is optimal for small spot sized below 5 pixels
+* LoG is optimal for spot of size 5 - 20 pixels
+
 # Workflow
 * Filter out the event salt-n-paper noise --> not needed with doG
 * There is no background - no median filtering?

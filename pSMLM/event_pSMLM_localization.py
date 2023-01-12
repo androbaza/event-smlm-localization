@@ -1,6 +1,7 @@
 import numpy as np
 from skimage import io
 from scipy.ndimage import gaussian_filter
+from scipy.ndimage import gaussian_laplace
 from skimage.feature.peak import peak_local_max
 # import os
 # import torch
@@ -8,12 +9,13 @@ from skimage.feature.peak import peak_local_max
 import matplotlib.pyplot as plt
 import time
 import datetime
+from skimage.util import invert
 # from numba import njit
 
 # filepath = '/home/smlm-workstation/event-smlm/Evb-SMLM/generated_frames/tubulin300x400_frames_scaled_x1000_5.0ms-absolute_time_5_15.0.tif'
 filepath = '/home/smlm-workstation/event-smlm/Evb-SMLM/generated_frames/tubulin300x400_5_15_frames_scaled_x1000_8.0ms-absolute_time_0_9.999999.tif'
 
-def extract_roi(frame, G_s1=2.5, G_s2=4, local_max_scale=7, roi_rad=5):
+def extract_roi(frame, G_s1=3, G_s2=4, local_max_scale=7, roi_rad=5):
     """
     Args:
         frame (ndarray): input frame
@@ -38,10 +40,13 @@ def extract_roi(frame, G_s1=2.5, G_s2=4, local_max_scale=7, roi_rad=5):
                       peak[1]-roi_rad:peak[1]+roi_rad+1] for peak in peaks]
 
     # perfom difference of gaussians
-    doG = gaussian_filter(frame, sigma=G_s1) - gaussian_filter(frame, sigma=G_s2)
+    # doG = gaussian_filter(frame, sigma=G_s1) - gaussian_filter(frame, sigma=G_s2)
+
+    # perform Laplacian of Gaussian and invert the result for maxs instead of mins
+    LoG = invert(gaussian_laplace(frame, sigma=G_s1))
 
     # find local peaks in doG
-    peaks = peak_local_max(doG, threshold_abs = np.std(doG) * local_max_scale)
+    peaks = peak_local_max(LoG, threshold_abs=np.std(LoG) * local_max_scale)
 
     # remove peaks which overlap with image borders
     peaks = remove_border_peaks(peaks)
